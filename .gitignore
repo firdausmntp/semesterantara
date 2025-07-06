@@ -1,0 +1,44 @@
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+
+# Log files
+*.log
+logs/
+
+# Build artifacts
+*.o
+*.so
+*.a
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Runtime files
+*.pid
+*.sock
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Node modules
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Test outputs
+test_output/
+coverage/
