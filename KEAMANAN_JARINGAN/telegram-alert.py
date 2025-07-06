@@ -3,6 +3,10 @@ import re
 import time
 import json
 from datetime import datetime
+import urllib3
+# Nonaktifkan peringatan SSL untuk menghindari masalah sertifikat
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 def send_alert(msg, token, chat_id):
     """Mengirim pesan ke Telegram dengan verify=False untuk bypass SSL verification."""
@@ -11,9 +15,11 @@ def send_alert(msg, token, chat_id):
     try:
         response = requests.post(url, data=payload, verify=False, timeout=5)
         if response.status_code != 200:
-            print(f"Error mengirim ke Telegram: {response.status_code} - {response.text}")
+            print(
+                f"Error mengirim ke Telegram: {response.status_code} - {response.text}")
     except Exception as e:
         print(f"Error koneksi Telegram: {e}")
+
 
 def format_snort_alert(line):
     """Memformat pesan notifikasi untuk Snort dari log alert_fast."""
@@ -46,6 +52,7 @@ def format_snort_alert(line):
         print(f"Error memformat pesan Snort: {e}")
         return None
 
+
 def format_suricata_alert(data):
     """Memformat pesan notifikasi untuk Suricata dari eve.json."""
     try:
@@ -75,6 +82,7 @@ def format_suricata_alert(data):
     except KeyError as e:
         print(f"Error memformat pesan Suricata: {e}")
         return None
+
 
 def monitor_logs(snort_log_path, suricata_log_path, token, chat_id):
     """Memantau log Snort dan Suricata, mengirim alert ke Telegram."""
@@ -129,6 +137,7 @@ def monitor_logs(snort_log_path, suricata_log_path, token, chat_id):
             else:
                 time.sleep(0.1)  # Hindari penggunaan CPU berlebih
 
+
 def main():
     # Konfigurasi
     token = 'YOUR_BOT_TOKEN'  # Ganti dengan token bot Telegram Anda
@@ -138,6 +147,7 @@ def main():
 
     # Jalankan pemantauan log
     monitor_logs(snort_log_path, suricata_log_path, token, chat_id)
+
 
 if __name__ == "__main__":
     main()
