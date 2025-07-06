@@ -15,10 +15,16 @@ sudo apt install -y snort
 
 # Get network interface
 INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
-LOCAL_NET=$(ip route | grep $INTERFACE | grep -E '192\.168|10\.|172\.' | head -1 | awk '{print $1}')
+LOCAL_NET=$(ip route | grep -E '192\.168|10\.|172\.' | head -1 | awk '{print $1}')
 
 echo "Detected Interface: $INTERFACE"
 echo "Detected Local Network: $LOCAL_NET"
+
+# Allow manual override if detection fails
+if [[ "$LOCAL_NET" == "" || "$LOCAL_NET" == "default" ]]; then
+    echo "Network detection failed. Please enter your local network (e.g., 192.168.56.0/24):"
+    read -r LOCAL_NET
+fi
 
 # Backup original config
 sudo cp /etc/snort/snort.conf /etc/snort/snort.conf.backup
@@ -61,20 +67,14 @@ EOF
 sudo mkdir -p /var/log/snort
 sudo chmod 755 /var/log/snort
 
-# Create service script
-sudo tee /etc/systemd/system/snort.service > /dev/null <<EOF
-[Unit]
-Description=Snort IDS
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/snort -A fast -b -d -D -i $INTERFACE -u snort -g snort -c /etc/snort/snort.conf -l /var/log/snort
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
+# Create a simple script to start Snort manually
+sudo tee /usr/local/bin/start_snort.sh > /dev/null <<EOF
+#!/bin/bash
+/usr/bin/snort -A fast -b -d -i $INTERFACE -u snort -g snort -c /etc/snort/snort.conf -l /var/log/snort
 EOF
+sudo chmod +x /usr/local/bin/start_snort.sh
+
+echo "To start Snort manually run: sudo /usr/local/bin/start_snort.sh"
 
 # Create snort user
 sudo useradd -r -s /bin/false snort
@@ -84,3 +84,7 @@ echo "✅ Snort installation and configuration completed!"
 echo "Interface: $INTERFACE"
 echo "Home Network: $LOCAL_NET"
 echo "Log Directory: /var/log/snort"
+
+# Show command to run Snort manually
+echo ""
+echo "To run Snort manually: sudo snort -A fast -b -d -i $INTERFACE -c /etc/snort/snort.conf -l /var/log/snort"

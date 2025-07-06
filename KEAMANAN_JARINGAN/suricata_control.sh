@@ -3,7 +3,25 @@
 
 SURICATA_CONFIG="/etc/suricata/suricata.yaml"
 SURICATA_LOG_DIR="/var/log/suricata"
-INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
+
+# Get network interface with improved detection and user input if needed
+get_interface() {
+    # First try the default detection method
+    local detected_interface=$(ip route | grep default | awk '{print $5}' | head -1)
+    
+    # If we couldn't detect, or to verify the interface, show all interfaces
+    if [[ "$detected_interface" == "" ]]; then
+        echo "Could not automatically detect interface."
+        echo "Available network interfaces:"
+        ip -o link show | awk -F': ' '{print $2}'
+        read -p "Enter interface name to use: " selected_interface
+        echo $selected_interface
+    else
+        echo $detected_interface
+    fi
+}
+
+INTERFACE=$(get_interface)
 
 show_menu() {
     echo "=== SURICATA CONTROLLER ==="
@@ -15,7 +33,8 @@ show_menu() {
     echo "6. View Alert Log"
     echo "7. View JSON Events"
     echo "8. Test Rules"
-    echo "9. Exit"
+    echo "9. Change Network Interface (current: $INTERFACE)"
+    echo "10. Exit"
     echo "=========================="
 }
 
@@ -26,6 +45,8 @@ start_suricata() {
     fi
     
     echo "🚀 Starting Suricata..."
+    echo "Using interface: $INTERFACE"
+    
     sudo suricata -c $SURICATA_CONFIG -i $INTERFACE -D
     
     if [ $? -eq 0 ]; then
@@ -34,6 +55,9 @@ start_suricata() {
         echo "Logs: $SURICATA_LOG_DIR"
     else
         echo "❌ Failed to start Suricata"
+        echo "You may need to manually select a different interface."
+        echo "Available interfaces:"
+        ip -o link show | awk -F': ' '{print $2}'
     fi
 }
 
@@ -80,10 +104,23 @@ test_rules() {
     sudo suricata -T -c $SURICATA_CONFIG
 }
 
+# Function to change the interface
+change_interface() {
+    echo "Available network interfaces:"
+    ip -o link show | awk -F': ' '{print $2}'
+    read -p "Enter interface name to use: " new_interface
+    if [[ "$new_interface" != "" ]]; then
+        INTERFACE=$new_interface
+        echo "✅ Interface changed to: $INTERFACE"
+    else
+        echo "⚠️ Interface unchanged"
+    fi
+}
+
 # Main menu loop
 while true; do
     show_menu
-    read -p "Choose option (1-9): " choice
+    read -p "Choose option (1-10): " choice
     
     case $choice in
         1) start_suricata ;;
@@ -94,7 +131,8 @@ while true; do
         6) view_alert_log ;;
         7) view_json_events ;;
         8) test_rules ;;
-        9) echo "👋 Goodbye!"; exit 0 ;;
+        9) change_interface ;;
+        10) echo "👋 Goodbye!"; exit 0 ;;
         *) echo "❌ Invalid option" ;;
     esac
     

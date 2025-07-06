@@ -12,10 +12,16 @@ sudo apt install -y suricata
 
 # Get network interface
 INTERFACE=$(ip route | grep default | awk '{print $5}' | head -1)
-LOCAL_NET=$(ip route | grep $INTERFACE | grep -E '192\.168|10\.|172\.' | head -1 | awk '{print $1}')
+LOCAL_NET=$(ip route | grep -E '192\.168|10\.|172\.' | head -1 | awk '{print $1}')
 
 echo "Detected Interface: $INTERFACE"
 echo "Detected Local Network: $LOCAL_NET"
+
+# Allow manual override if detection fails
+if [[ "$LOCAL_NET" == "" || "$LOCAL_NET" == "default" ]]; then
+    echo "Network detection failed. Please enter your local network (e.g., 192.168.56.0/24):"
+    read -r LOCAL_NET
+fi
 
 # Backup original config
 sudo cp /etc/suricata/suricata.yaml /etc/suricata/suricata.yaml.backup
@@ -83,3 +89,7 @@ echo "✅ Suricata installation and configuration completed!"
 echo "Interface: $INTERFACE"
 echo "Home Network: $LOCAL_NET"
 echo "Log Directory: /var/log/suricata"
+
+# Show command to run Suricata manually
+echo ""
+echo "To run Suricata manually: sudo suricata -c /etc/suricata/suricata.yaml -i $INTERFACE"
